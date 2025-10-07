@@ -72,7 +72,8 @@ jobs:
             DEPLOY_PATH="/home/${{secrets.SSH_USER}}/deploy"
             cd $DEPLOY_PATH
 
-            #Detener y limpiar servicios anteriores ()
+            #Detener y limpiar servicios anteriores (mejora clave)
+            sudo docker-compose down
 
             # DESCARGAR LA IMAGEN DESDE DOCKERHUB
             echo ${{secrets.DOCKER_PASSWORD}} | sudo docker login -u ${{secrets.DOCKER_USER}} --password-stdin
