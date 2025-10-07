@@ -16,9 +16,9 @@ jobs:
           username: ${{secrets.DOCKER_USER}}
           password: ${{secrets.DOCKER_PASSWORD}}
       - name: Construir la imagen Docker
-        run: docker build -t ${{secrets.DOCKER_USER}}/univ-prueba:latest .
+        run: docker build -t ${{secrets.DOCKER_USER}}/uunivalle:latest .
       - name: Publicar la imagen Docker
-        run: docker push ${{secrets.DOCKER_USER}}/univ-prueba:latest
+        run: docker push ${{secrets.DOCKER_USER}}/uunivalle:latest
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
