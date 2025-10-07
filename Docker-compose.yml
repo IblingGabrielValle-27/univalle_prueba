@@ -1,0 +1,8 @@
+services:
+    web:build:
+      image: ibling/uunivalle:latest #repo de dockerhub
+      container_name: uunivalle
+      ports:
+        - "80:80"  #mapear el puerto 80 del contenedor al puerto 80 del host
+      restart: always
+      
