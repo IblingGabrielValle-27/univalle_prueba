@@ -10,29 +10,33 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-      - name: login a DockerHUB
+      
+      - name: Login a DockerHUB
         uses: docker/login-action@v3
         with:
           username: ${{secrets.DOCKER_USER}}
           password: ${{secrets.DOCKER_PASSWORD}}
+      
       - name: Construir la imagen Docker
         run: docker build -t ${{secrets.DOCKER_USER}}/uunivalle:latest .
+      
       - name: Publicar la imagen Docker
         run: docker push ${{secrets.DOCKER_USER}}/uunivalle:latest
+
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
 
     steps:
-      - name: Chekcout del codigo (obtener docker-compose.yml, setup_vm.sh)
+      - name: Checkout del codigo
         uses: actions/checkout@v5
 
-      # 1 configurar acceso ssh
       - name: Configurar agente SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{secrets.SSH_PRIVATE_KEY}}
-      # 2 copiar script de configuracion a la VM de OCI
+      
+      # Copiar script de configuración
       - name: Copiar script de configuracion a la VM
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -41,7 +45,9 @@ jobs:
           key: ${{secrets.SSH_PRIVATE_KEY}}
           source: "setup_vm.sh"
           target: "/tmp/"
-      # 3 ejecutar script de configuracion en la VM de OCI
+          strip_components: 0
+      
+      # Ejecutar script de configuración
       - name: Ejecutar script de instalacion de docker en la VM
         uses: appleboy/ssh-action@master
         with:
@@ -51,8 +57,9 @@ jobs:
           script: |
             chmod +x /tmp/setup_vm.sh
             /tmp/setup_vm.sh ${{secrets.SSH_USER}}
-            rm /tmp/setup_vm.sh # eliminar script por seguridad
-      # 4 copiar docker-compose.yml a la VM de OCI
+            rm /tmp/setup_vm.sh
+      
+      # Crear directorio de deploy y copiar docker-compose
       - name: Copiar docker-compose.yml a la VM
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -61,7 +68,10 @@ jobs:
           key: ${{secrets.SSH_PRIVATE_KEY}}
           source: "docker-compose.yml"
           target: "/home/${{secrets.SSH_USER}}/deploy/"
-      # 5 ejecutar docker-compose en la VM de OCI
+          strip_components: 0
+          mkdir: true
+      
+      # Ejecutar docker-compose
       - name: Ejecutar docker-compose en la VM
         uses: appleboy/ssh-action@master
         with:
@@ -71,10 +81,16 @@ jobs:
           script: |
             DEPLOY_PATH="/home/${{secrets.SSH_USER}}/deploy"
             cd $DEPLOY_PATH
-
-            # DESCARGAR LA IMAGEN DESDE DOCKERHUB
-            echo ${{secrets.DOCKER_PASSWORD}} | sudo docker login -u ${{secrets.DOCKER_USER}} --password-stdin
-
+            
+            # Login a Docker Hub
+            echo "${{secrets.DOCKER_PASSWORD}}" | sudo docker login -u "${{secrets.DOCKER_USER}}" --password-stdin
+            
+            # Descargar y ejecutar
             sudo docker-compose pull
+            sudo docker-compose down 2>/dev/null || true
             sudo docker-compose up -d --force-recreate
+            
+            # Logout
             sudo docker logout
+            
+            echo "Despliegue completado exitosamente"
